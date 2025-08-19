@@ -15,11 +15,16 @@ export default function ThemeToggle() {
 		return null;
 	}
 
-	//TODO padding & style
 	return (
 		<button
-			onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}>
-			{currentTheme === "dark" ? "☀️" : "🌙"}
+			onClick={() => setTheme(currentTheme === "dark" ? "light" : "dark")}
+			className="relative inline-flex h-6 w-12 items-center rounded-full transition-colors duration-200 ease-in-out outline-none ring-2 ring-offset-2 ring-foreground ring-offset-background m-1"
+		>
+			<span
+				className="inline-flex items-center h-6 w-6 transform transition duration-200 ease-in-out translate-x-0 dark:translate-x-6"
+			>
+				<img className="dark:invert" src={currentTheme === "dark" ? "icon-moon.svg" : "icon-sun.svg"} />
+			</span>
 		</button>
 	);
 }
