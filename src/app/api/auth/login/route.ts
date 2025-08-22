@@ -1,0 +1,84 @@
+import { NextResponse } from 'next/server';
+import prisma, { nowMs, toBigIntMs } from '../../../../lib/db';
+import { loginSchema } from '../../../../lib/validation/schemas';
+import { verifyPassword, hashPassword } from '../../../../lib/security/hash';
+import { checkLoginRateLimit, recordLoginAttempt } from '../../../../lib/auth/rate-limit';
+import { isLocked, recordFailedLogin, recordSuccessfulLogin } from '../../../../lib/auth/lockout';
+import { createSession, setSessionCookie, withNoStore } from '../../../../lib/auth/session';
+
+function getIp(req: Request): string | null {
+  const xff = req.headers.get('x-forwarded-for');
+  const primary = xff?.split(',')[0]?.trim();
+  const ip = primary || req.headers.get('x-real-ip');
+  return ip ?? null;
+}
+
+// POST /api/auth/login
+export async function POST(req: Request) {
+  try {
+    const body = await req.json().catch(() => null);
+    const parsed = loginSchema.safeParse(body);
+    if (!parsed.success) {
+      const issues = parsed.error.issues.map(i => ({ path: i.path.join('.'), message: i.message }));
+      return withNoStore(NextResponse.json({ error: 'Invalid input', issues }, { status: 400 }));
+    }
+
+    const { username, password } = parsed.data;
+    const ip = getIp(req);
+    const usernameKey = username;
+
+    const rl = await checkLoginRateLimit(ip, usernameKey);
+    if (!rl.allowed) {
+      await recordLoginAttempt({ ip, usernameKey, success: false });
+      return withNoStore(NextResponse.json({ error: 'Too many attempts, try again later' }, { status: 429 }));
+    }
+
+    const user = await prisma.user.findUnique({ where: { username } });
+    if (!user) {
+      await recordLoginAttempt({ ip, usernameKey, success: false });
+      return withNoStore(NextResponse.json({ error: 'Invalid credentials' }, { status: 401 }));
+    }
+
+    if (!user.isActive) {
+      await recordLoginAttempt({ ip, usernameKey, success: false });
+      return withNoStore(NextResponse.json({ error: 'Account is disabled' }, { status: 403 }));
+    }
+
+    const lock = isLocked(user.lockedUntil);
+    if (lock.locked) {
+      await recordLoginAttempt({ ip, usernameKey, success: false });
+      const res = NextResponse.json({ error: 'Account locked. Try again later', retryAfterMs: lock.remainingMs }, { status: 423 });
+      return withNoStore(res);
+    }
+
+    const { valid, needsRehash } = await verifyPassword(password, user.passwordHash);
+    if (!valid) {
+      await recordLoginAttempt({ ip, usernameKey, success: false });
+      const fail = await recordFailedLogin({ id: user.id, failedLoginCount: user.failedLoginCount, lockedUntil: user.lockedUntil });
+      if (fail.locked) {
+        const res = NextResponse.json({ error: 'Account locked. Try again later', retryAfterMs: fail.remainingMs }, { status: 423 });
+        return withNoStore(res);
+      }
+      return withNoStore(NextResponse.json({ error: 'Invalid credentials' }, { status: 401 }));
+    }
+
+    if (needsRehash) {
+      const newHash = await hashPassword(password);
+      const now = toBigIntMs(nowMs());
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { passwordHash: newHash, passwordUpdatedAt: now, updatedAt: now },
+      });
+    }
+
+    await recordSuccessfulLogin(user.id);
+    const session = await createSession(user.id, req);
+    const res = NextResponse.json({ ok: true }, { status: 200 });
+    setSessionCookie(session.id, res);
+    res.headers.set('Pragma', 'no-cache');
+    await recordLoginAttempt({ ip, usernameKey, success: true });
+    return withNoStore(res);
+  } catch {
+    return withNoStore(NextResponse.json({ error: 'Login failed' }, { status: 500 }));
+  }
+}

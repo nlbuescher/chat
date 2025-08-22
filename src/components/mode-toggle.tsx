@@ -7,10 +7,10 @@ import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuIte
 import { Button } from "@/components/ui/button";
 
 export default function ModeToggle({ ...props }: React.ComponentProps<typeof Button>) {
-	let { theme, setTheme } = useTheme();
-	let [mounted, setMounted] = useState(false);
+	const { theme, setTheme } = useTheme();
+	const [mounted, setMounted] = useState(false);
 
-	useEffect(() => setMounted(true));
+	useEffect(() => setMounted(true), []);
 
 	if (!mounted) {
 		return null;

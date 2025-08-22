@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import {
 	SidebarContent,
 	SidebarHeader,
-	SidebarSeparator,
 	SidebarGroup,
 	SidebarGroupContent,
 	SidebarGroupLabel,
