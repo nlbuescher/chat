@@ -1,8 +1,12 @@
 "use client";
 
 import { cn } from "@/lib/utils";
+import ModeToggle from "@/components/mode-toggle";
+import { Button } from "@/components/ui/button";
 import {
 	SidebarContent,
+	SidebarHeader,
+	SidebarSeparator,
 	SidebarGroup,
 	SidebarGroupContent,
 	SidebarGroupLabel,
@@ -30,6 +34,10 @@ export function AppSidebar({ navMain, className, ...props }: AppSidebarProps) {
 	return (
 		<Sidebar className={cn("h-screen", className)} {...props}>
 			<SidebarContent>
+				<SidebarHeader className="border-b">
+					<Button className="w-full" variant="outline" size="sm">New chat</Button>
+				</SidebarHeader>
+
 				{navMain.map((item) => {
 					return <SidebarGroup key={item.title}>
 						<SidebarGroupLabel>{item.title}</SidebarGroupLabel>
@@ -46,6 +54,10 @@ export function AppSidebar({ navMain, className, ...props }: AppSidebarProps) {
 						</SidebarGroupContent>
 					</SidebarGroup>
 				})}
+
+				<div className="flex items-center mt-auto gap-2 p-2">
+					<ModeToggle className="ml-auto" />
+				</div>
 			</SidebarContent>
 		</Sidebar>
 	);
