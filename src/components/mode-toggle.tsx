@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { useTheme } from "next-themes";
-import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { Moon, Sun, SunMoon } from "lucide-react";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem } from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
 
-export default function ModeToggle() {
+export default function ModeToggle({ ...props }: React.ComponentProps<typeof Button>) {
 	let { theme, setTheme } = useTheme();
 	let [mounted, setMounted] = useState(false);
 
@@ -19,9 +19,8 @@ export default function ModeToggle() {
 	return (
 		<DropdownMenu>
 			<DropdownMenuTrigger asChild>
-				<Button variant="outline" size="icon">
+				<Button variant="outline" size="icon" {...props}>
 					{theme === "light" ? <Sun /> : theme === "dark" ? <Moon /> : <SunMoon />}
-					<span className="sr-only">Toggle theme</span>
 				</Button>
 			</DropdownMenuTrigger>
 			<DropdownMenuContent align="end">
