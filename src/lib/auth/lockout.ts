@@ -1,5 +1,5 @@
 // src/lib/auth/lockout.ts
-import prisma, { nowMs, toBigIntMs, fromBigIntMs } from '../db';
+import prisma, { nowMs, toBigIntMs, fromBigIntMs } from '@/lib/db';
 
 export const DEFAULT_LOCKOUT_THRESHOLD = +(process.env.LOCKOUT_THRESHOLD ?? 5);
 export const DEFAULT_LOCKOUT_DURATION_MS = +(process.env.LOCKOUT_DURATION_MS ?? 15 * 60_000);

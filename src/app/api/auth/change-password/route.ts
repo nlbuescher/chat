@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server';
-import prisma, { nowMs, toBigIntMs } from '../../../../lib/db';
-import { changePasswordSchema } from '../../../../lib/validation/schemas';
-import { verifyPassword, hashPassword } from '../../../../lib/security/hash';
+import prisma, { nowMs, toBigIntMs } from '@/lib/db';
+import { changePasswordSchema } from '@/lib/validation/schemas';
+import { verifyPassword, hashPassword } from '@/lib/security/hash';
 import {
   validateAndTouchSession,
   revokeAllUserSessions,
   setSessionCookie,
   withNoStore,
-} from '../../../../lib/auth/session';
+} from '@/lib/auth/session';
 
 // POST /api/auth/change-password
 export async function POST(req: Request) {

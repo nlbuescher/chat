@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { readSessionIdFromCookies, revokeSession, clearSessionCookie, withNoStore } from '../../../../lib/auth/session';
+import { readSessionIdFromCookies, revokeSession, clearSessionCookie, withNoStore } from '@/lib/auth/session';
 
 // POST /api/auth/logout
 export async function POST() {

@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import prisma, { nowMs, toBigIntMs } from '../../../../lib/db';
-import { requestPasswordResetSchema, usernameSchema } from '../../../../lib/validation/schemas';
-import { generateToken, RESET_TOKEN_TTL_MS } from '../../../../lib/security/token';
-import { withNoStore } from '../../../../lib/auth/session';
+import prisma, { nowMs, toBigIntMs } from '@/lib/db';
+import { requestPasswordResetSchema, usernameSchema } from '@/lib/validation/schemas';
+import { generateToken, RESET_TOKEN_TTL_MS } from '@/lib/security/token';
+import { withNoStore } from '@/lib/auth/session';
 
 const RESET_MAX_PER_USER = +(process.env.RESET_MAX_PER_USER ?? 3);
 const RESET_WINDOW_MS = +(process.env.RESET_WINDOW_MS ?? 15 * 60_000); // 15 minutes

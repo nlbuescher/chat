@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
-import prisma, { nowMs, toBigIntMs } from '../../../../lib/db';
-import { loginSchema } from '../../../../lib/validation/schemas';
-import { verifyPassword, hashPassword } from '../../../../lib/security/hash';
-import { checkLoginRateLimit, recordLoginAttempt } from '../../../../lib/auth/rate-limit';
-import { isLocked, recordFailedLogin, recordSuccessfulLogin } from '../../../../lib/auth/lockout';
-import { createSession, setSessionCookie, withNoStore } from '../../../../lib/auth/session';
+import prisma, { nowMs, toBigIntMs } from '@/lib/db';
+import { loginSchema } from '@/lib/validation/schemas';
+import { verifyPassword, hashPassword } from '@/lib/security/hash';
+import { checkLoginRateLimit, recordLoginAttempt } from '@/lib/auth/rate-limit';
+import { isLocked, recordFailedLogin, recordSuccessfulLogin } from '@/lib/auth/lockout';
+import { createSession, setSessionCookie, withNoStore } from '@/lib/auth/session';
 
 function getIp(req: Request): string | null {
   const xff = req.headers.get('x-forwarded-for');

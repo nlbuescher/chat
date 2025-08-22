@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { validateAndTouchSession, withNoStore } from '../../../../lib/auth/session';
+import { validateAndTouchSession, withNoStore } from '@/lib/auth/session';
 
 // GET /api/auth/session
 export async function GET() {

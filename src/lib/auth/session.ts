@@ -3,7 +3,7 @@ import 'server-only';
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
-import prisma, { nowMs, toBigIntMs, fromBigIntMs } from '../db';
+import prisma, { nowMs, toBigIntMs, fromBigIntMs } from '@/lib/db';
 
 const COOKIE_NAME = process.env.SESSION_COOKIE_NAME ?? 'sid';
 const SESSION_MAX_AGE_MS = +(process.env.SESSION_MAX_AGE_MS ?? 7 * 24 * 60 * 60 * 1000); // 7d

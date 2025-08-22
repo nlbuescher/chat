@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import prisma, { nowMs, toBigIntMs } from '../../../../lib/db';
-import { hashPassword } from '../../../../lib/security/hash';
-import { registerSchema } from '../../../../lib/validation/schemas';
+import prisma, { nowMs, toBigIntMs } from '@/lib/db';
+import { hashPassword } from '@/lib/security/hash';
+import { registerSchema } from '@/lib/validation/schemas';
 
 // POST /api/auth/register
 export async function POST(req: Request) {

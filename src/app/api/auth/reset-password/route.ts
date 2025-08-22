@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import prisma, { nowMs, toBigIntMs } from '../../../../lib/db';
-import { resetPasswordSchema } from '../../../../lib/validation/schemas';
-import { hashPassword } from '../../../../lib/security/hash';
-import { hashToken } from '../../../../lib/security/token';
-import { revokeAllUserSessions, withNoStore } from '../../../../lib/auth/session';
+import prisma, { nowMs, toBigIntMs } from '@/lib/db';
+import { resetPasswordSchema } from '@/lib/validation/schemas';
+import { hashPassword } from '@/lib/security/hash';
+import { hashToken } from '@/lib/security/token';
+import { revokeAllUserSessions, withNoStore } from '@/lib/auth/session';
 
 // POST /api/auth/reset-password
 export async function POST(req: Request) {

@@ -1,6 +1,6 @@
 // src/lib/validation/schemas.ts
 import { z } from 'zod';
-import { validatePassword, passwordPolicyDescription } from '../security/password-policy';
+import { validatePassword, passwordPolicyDescription } from '@/lib/security/password-policy';
 
 const USERNAME_RE = /^[a-z0-9_]{3,32}$/;
 
