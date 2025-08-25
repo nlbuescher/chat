@@ -1,8 +1,6 @@
 // src/lib/auth/lockout.ts
 import prisma, { nowMs, toBigIntMs, fromBigIntMs } from '@/lib/db';
-
-export const DEFAULT_LOCKOUT_THRESHOLD = +(process.env['LOCKOUT_THRESHOLD'] ?? 5);
-export const DEFAULT_LOCKOUT_DURATION_MS = +(process.env['LOCKOUT_DURATION_MS'] ?? 15 * 60_000);
+import { authConfig } from '@/lib/config/security';
 
 type LockoutSettings = {
   threshold: number;
@@ -15,9 +13,10 @@ export type LockoutStatus = {
 };
 
 export function getLockoutSettings(): LockoutSettings {
-  const threshold = Number.isFinite(DEFAULT_LOCKOUT_THRESHOLD) ? DEFAULT_LOCKOUT_THRESHOLD : 5;
-  const durationMs = Number.isFinite(DEFAULT_LOCKOUT_DURATION_MS) ? DEFAULT_LOCKOUT_DURATION_MS : 15 * 60_000;
-  return { threshold, durationMs };
+  return {
+    threshold: authConfig.lockout.threshold,
+    durationMs: authConfig.lockout.durationMs,
+  };
 }
 
 export function isLocked(lockedUntil: bigint | null | undefined): LockoutStatus {

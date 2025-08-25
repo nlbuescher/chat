@@ -4,10 +4,11 @@ import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
 import prisma, { nowMs, toBigIntMs, fromBigIntMs } from '@/lib/db';
+import { authConfig } from '@/lib/config/security';
 
-const COOKIE_NAME = process.env['SESSION_COOKIE_NAME'] ?? '__Host-sid';
-const SESSION_MAX_AGE_MS = +(process.env['SESSION_MAX_AGE_MS'] ?? 7 * 24 * 60 * 60 * 1000); // 7d
-const SESSION_IDLE_TIMEOUT_MS = +(process.env['SESSION_IDLE_TIMEOUT_MS'] ?? 30 * 60 * 1000); // 30m
+const COOKIE_NAME = authConfig.session.cookieName;
+const SESSION_MAX_AGE_MS = authConfig.session.maxAgeMs; // default via config
+const SESSION_IDLE_TIMEOUT_MS = authConfig.session.idleTimeoutMs; // default via config
 
 type ClientInfo = {
   ip: string | null;
