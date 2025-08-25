@@ -5,10 +5,17 @@ import { verifyPassword, hashPassword } from "@/lib/security/hash";
 import { checkLoginRateLimit, recordLoginAttempt, LOGIN_WINDOW_MS } from "@/lib/auth/rate-limit";
 import { isLocked, recordFailedLogin, recordSuccessfulLogin } from "@/lib/auth/lockout";
 import { createSession, setSessionCookie, withNoStore, getClientInfo } from "@/lib/auth/session";
+import { verifyCsrf, ensureCsrfCookie } from "@/lib/security/csrf";
 
 // POST /api/auth/login
 export async function POST(req: Request) {
   try {
+    // CSRF protection (double-submit)
+    if (!verifyCsrf(req)) {
+      const res = NextResponse.json({ error: "CSRF token missing or invalid" }, { status: 403 });
+      ensureCsrfCookie(req, res);
+      return withNoStore(res);
+    }
     const body = await req.json().catch(() => null);
     const parsed = loginSchema.safeParse(body);
     if (!parsed.success) {

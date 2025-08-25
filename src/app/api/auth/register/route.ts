@@ -3,10 +3,17 @@ import prisma, { nowMs, toBigIntMs } from "@/lib/db";
 import { hashPassword } from "@/lib/security/hash";
 import { registerSchema } from "@/lib/validation/schemas";
 import { withNoStore } from "@/lib/auth/session";
+import { verifyCsrf, ensureCsrfCookie } from "@/lib/security/csrf";
 
 // POST /api/auth/register
 export async function POST(req: Request) {
   try {
+    // CSRF protection (double-submit)
+    if (!verifyCsrf(req)) {
+      const res = NextResponse.json({ error: "CSRF token missing or invalid" }, { status: 403 });
+      ensureCsrfCookie(req, res);
+      return withNoStore(res);
+    }
     const body = await req.json().catch(() => null);
 
     const parsed = registerSchema.safeParse(body);
@@ -15,7 +22,9 @@ export async function POST(req: Request) {
         path: i.path.join("."),
         message: i.message,
       }));
-      return withNoStore(NextResponse.json({ error: "Invalid input", issues }, { status: 400 }));
+      const res = NextResponse.json({ error: "Invalid input", issues }, { status: 400 });
+      ensureCsrfCookie(req, res);
+      return withNoStore(res);
     }
 
     const { username, email, password } = parsed.data;
@@ -52,7 +61,10 @@ export async function POST(req: Request) {
       },
     });
 
-    return withNoStore(NextResponse.json({ ok: true }, { status: 201 }));
+    const res = NextResponse.json({ ok: true }, { status: 201 });
+    // Refresh CSRF cookie post-registration
+    ensureCsrfCookie(req, res);
+    return withNoStore(res);
   } catch {
     // Avoid leaking details
     return withNoStore(NextResponse.json({ error: "Registration failed" }, { status: 500 }));

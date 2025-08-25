@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { nanoid } from "nanoid";
 import prisma, { nowMs, toBigIntMs, fromBigIntMs } from "@/lib/db";
 import { authConfig } from "@/lib/config/security";
+import { setCsrfCookie as setCsrfTokenCookie } from "@/lib/security/csrf";
 
 const COOKIE_NAME = authConfig.session.cookieName;
 const SESSION_MAX_AGE_MS = authConfig.session.maxAgeMs; // default via config
@@ -19,19 +20,25 @@ type ClientInfo = {
 };
 
 export function getClientInfo(req: Request | NextRequest): ClientInfo {
-  // Prefer platform-provided IP, then CDN/proxy headers, then XFF chain
+  // Prefer platform-provided IP, then trusted CDN headers.
+  // Only use X-Forwarded-For / X-Real-IP when explicitly behind trusted proxy.
   const headers = req.headers;
+  const trustProxy = !!(authConfig as any)?.network?.trustProxy;
 
   let ip: string | null = null;
   const anyReq = req as { ip?: string | null };
   if (typeof anyReq?.ip === "string" && anyReq.ip) {
     ip = anyReq.ip;
   } else {
+    const vercel = headers.get("x-vercel-ip");
+    const cf = headers.get("cf-connecting-ip");
+    const xff = headers.get("x-forwarded-for");
+    const xreal = headers.get("x-real-ip");
     ip =
-      headers.get("x-vercel-ip") ||
-      headers.get("cf-connecting-ip") ||
-      headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
-      headers.get("x-real-ip") ||
+      vercel ||
+      cf ||
+      (trustProxy ? xff?.split(",")[0]?.trim() || null : null) ||
+      (trustProxy ? xreal || null : null) ||
       null;
   }
 
@@ -106,6 +113,25 @@ export function setSessionCookie(id: string, res: NextResponse) {
     maxAge: Math.floor(SESSION_MAX_AGE_MS / 1000),
     priority: "high",
   });
+  // Also ensure CSRF token cookie is present/rotated alongside session issuance
+  try {
+    setCsrfTokenCookie(res);
+  } catch {
+    // ignore
+  }
+}
+
+// Helper to apply Set-Cookie when validateAndTouchSession() rotated the session
+export function applySessionRotationIfNeeded(res: NextResponse, auth: any) {
+  try {
+    if (auth && (auth as any).rotated && auth.session?.id) {
+      setSessionCookie(auth.session.id, res);
+      // refresh CSRF token as well
+      setCsrfTokenCookie(res);
+    }
+  } catch {
+    // ignore
+  }
 }
 
 export function clearSessionCookie(res: NextResponse) {
@@ -158,8 +184,13 @@ export async function validateAndTouchSession(req: Request | NextRequest) {
   const { ip, userAgent } = getClientInfo(req);
   const createdAt = fromBigIntMs(s.createdAt);
   const rotateDueToAge = createdAt !== null && now - createdAt >= SESSION_ROTATION_INTERVAL_MS;
-  const rotateDueToUA = (s.userAgent ?? null) !== (userAgent ?? null);
-  const rotateDueToIP = (s.ip ?? null) !== (ip ?? null);
+  const policy = (authConfig as any)?.rotation ?? {
+    rotateOnIpChange: true,
+    rotateOnUserAgentChange: true,
+  };
+  const rotateDueToUA =
+    !!policy.rotateOnUserAgentChange && (s.userAgent ?? null) !== (userAgent ?? null);
+  const rotateDueToIP = !!policy.rotateOnIpChange && (s.ip ?? null) !== (ip ?? null);
 
   if (rotateDueToAge || rotateDueToUA || rotateDueToIP) {
     const newSession = await createSession(s.userId, req);
@@ -200,6 +231,9 @@ export function withNoStore(resp: NextResponse) {
   resp.headers.set("X-Content-Type-Options", "nosniff");
   resp.headers.set("Referrer-Policy", "no-referrer");
   resp.headers.set("X-Frame-Options", "DENY");
+  if (process.env.NODE_ENV === "production") {
+    resp.headers.set("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload");
+  }
   return resp;
 }
 
@@ -212,4 +246,14 @@ export async function pruneExpiredAuthArtifacts() {
       OR: [{ expiresAt: { lt: nowBig } }, { usedAt: { not: null } }],
     },
   });
+
+  // Retention-based pruning for auth logs
+  const retention = (authConfig as any)?.retention ?? {
+    loginAttemptsMs: 30 * 24 * 60 * 60 * 1000,
+    resetRequestsMs: 30 * 24 * 60 * 60 * 1000,
+  };
+  const loginCutoff = toBigIntMs(now - retention.loginAttemptsMs);
+  const resetReqCutoff = toBigIntMs(now - retention.resetRequestsMs);
+  await prisma.loginAttempt.deleteMany({ where: { createdAt: { lt: loginCutoff } } });
+  await prisma.passwordResetRequest.deleteMany({ where: { createdAt: { lt: resetReqCutoff } } });
 }

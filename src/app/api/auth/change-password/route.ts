@@ -8,11 +8,19 @@ import {
   setSessionCookie,
   withNoStore,
   createSession,
+  applySessionRotationIfNeeded,
 } from "@/lib/auth/session";
+import { verifyCsrf, ensureCsrfCookie } from "@/lib/security/csrf";
 
 // POST /api/auth/change-password
 export async function POST(req: Request) {
   try {
+    // CSRF protection
+    if (!verifyCsrf(req)) {
+      const res = NextResponse.json({ error: "CSRF token missing or invalid" }, { status: 403 });
+      ensureCsrfCookie(req, res);
+      return withNoStore(res);
+    }
     // Require valid session
     const auth = await validateAndTouchSession(req);
     if (!auth.valid) {
@@ -40,7 +48,9 @@ export async function POST(req: Request) {
         path: i.path.join("."),
         message: i.message,
       }));
-      return withNoStore(NextResponse.json({ error: "Invalid input", issues }, { status: 400 }));
+      const res = NextResponse.json({ error: "Invalid input", issues }, { status: 400 });
+      applySessionRotationIfNeeded(res, auth as any);
+      return withNoStore(res);
     }
 
     const { currentPassword, newPassword } = parsed.data;

@@ -4,6 +4,7 @@ import { requestPasswordResetSchema, usernameSchema } from "@/lib/validation/sch
 import { generateToken } from "@/lib/security/token";
 import { withNoStore, getClientInfo } from "@/lib/auth/session";
 import { authConfig } from "@/lib/config/security";
+import { verifyCsrf, ensureCsrfCookie } from "@/lib/security/csrf";
 
 async function findUserByIdentifier(identifier: string) {
   // Try username first (normalized to lowercase via schema)
@@ -25,6 +26,12 @@ async function findUserByIdentifier(identifier: string) {
 // POST /api/auth/request-password-reset
 export async function POST(req: Request) {
   try {
+    // CSRF protection
+    if (!verifyCsrf(req)) {
+      const res = NextResponse.json({ error: "CSRF token missing or invalid" }, { status: 403 });
+      ensureCsrfCookie(req, res);
+      return withNoStore(res);
+    }
     const body = await req.json().catch(() => null);
     const parsed = requestPasswordResetSchema.safeParse(body);
     if (!parsed.success) {
@@ -32,7 +39,9 @@ export async function POST(req: Request) {
         path: i.path.join("."),
         message: i.message,
       }));
-      return withNoStore(NextResponse.json({ error: "Invalid input", issues }, { status: 400 }));
+      const res = NextResponse.json({ error: "Invalid input", issues }, { status: 400 });
+      ensureCsrfCookie(req, res);
+      return withNoStore(res);
     }
 
     const {
@@ -57,6 +66,7 @@ export async function POST(req: Request) {
       // Always 200 to avoid enumeration
       const res = NextResponse.json({ ok: true }, { status: 200 });
       res.headers.set("Pragma", "no-cache");
+      ensureCsrfCookie(req, res);
       return withNoStore(res);
     }
 
@@ -71,6 +81,7 @@ export async function POST(req: Request) {
       });
       const res = NextResponse.json({ ok: true }, { status: 200 });
       res.headers.set("Pragma", "no-cache");
+      ensureCsrfCookie(req, res);
       return withNoStore(res);
     }
 
@@ -85,6 +96,7 @@ export async function POST(req: Request) {
       });
       const res = NextResponse.json({ ok: true }, { status: 200 });
       res.headers.set("Pragma", "no-cache");
+      ensureCsrfCookie(req, res);
       return withNoStore(res);
     }
 
@@ -114,11 +126,13 @@ export async function POST(req: Request) {
       console.warn("[DEV] Password reset link:", link);
       const res = NextResponse.json({ ok: true, devLink: link }, { status: 200 });
       res.headers.set("Pragma", "no-cache");
+      ensureCsrfCookie(req, res);
       return withNoStore(res);
     }
 
     const res = NextResponse.json({ ok: true }, { status: 200 });
     res.headers.set("Pragma", "no-cache");
+    ensureCsrfCookie(req, res);
     return withNoStore(res);
   } catch {
     return withNoStore(

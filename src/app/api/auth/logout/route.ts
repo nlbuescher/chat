@@ -5,10 +5,16 @@ import {
   clearSessionCookie,
   withNoStore,
 } from "@/lib/auth/session";
+import { verifyCsrf, ensureCsrfCookie } from "@/lib/security/csrf";
 
 // POST /api/auth/logout
-export async function POST() {
+export async function POST(req: Request) {
   try {
+    if (!verifyCsrf(req)) {
+      const res = NextResponse.json({ error: "CSRF token missing or invalid" }, { status: 403 });
+      ensureCsrfCookie(req, res);
+      return withNoStore(res);
+    }
     const sid = await readSessionIdFromCookies();
     if (sid) {
       await revokeSession(sid);
