@@ -1,5 +1,5 @@
 // src/lib/security/hash.ts
-import argon2 from 'argon2';
+import argon2 from "argon2";
 
 export const ARGON2_OPTS: argon2.Options & { type: number } = {
   type: argon2.argon2id,
@@ -15,7 +15,7 @@ export async function hashPassword(password: string): Promise<string> {
 
 export async function verifyPassword(
   password: string,
-  passwordHash: string
+  passwordHash: string,
 ): Promise<{ valid: boolean; needsRehash: boolean }> {
   try {
     const valid = await argon2.verify(passwordHash, password, ARGON2_OPTS);
@@ -25,7 +25,7 @@ export async function verifyPassword(
     const anyArgon = argon2 as unknown as {
       needsRehash?: (hash: string, opts: typeof ARGON2_OPTS) => boolean;
     };
-    if (valid && typeof anyArgon.needsRehash === 'function') {
+    if (valid && typeof anyArgon.needsRehash === "function") {
       needsRehash = anyArgon.needsRehash(passwordHash, ARGON2_OPTS);
     }
 

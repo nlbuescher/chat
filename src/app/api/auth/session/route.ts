@@ -1,13 +1,13 @@
-import { NextResponse } from 'next/server';
-import { validateAndTouchSession, withNoStore } from '@/lib/auth/session';
+import { NextResponse } from "next/server";
+import { validateAndTouchSession, withNoStore, setSessionCookie } from "@/lib/auth/session";
 
 // GET /api/auth/session
-export async function GET() {
+export async function GET(req: Request) {
   try {
-    const auth = await validateAndTouchSession();
+    const auth = await validateAndTouchSession(req);
     if (!auth.valid) {
       const res = NextResponse.json({ authenticated: false }, { status: 200 });
-      res.headers.set('Pragma', 'no-cache');
+      res.headers.set("Pragma", "no-cache");
       return withNoStore(res);
     }
     const res = NextResponse.json(
@@ -15,11 +15,14 @@ export async function GET() {
         authenticated: true,
         user: { id: auth.session.user.id, username: auth.session.user.username },
       },
-      { status: 200 }
+      { status: 200 },
     );
-    res.headers.set('Pragma', 'no-cache');
+    if ((auth as any).rotated) {
+      setSessionCookie(auth.session.id, res);
+    }
+    res.headers.set("Pragma", "no-cache");
     return withNoStore(res);
   } catch {
-    return withNoStore(NextResponse.json({ error: 'Session check failed' }, { status: 500 }));
+    return withNoStore(NextResponse.json({ error: "Session check failed" }, { status: 500 }));
   }
 }

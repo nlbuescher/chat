@@ -16,53 +16,55 @@ const data: AppSidebarProps = {
       ],
     },
   ],
-}
+};
 
 export default function Home() {
   return (
     <SidebarProvider>
       <AppSidebar {...data} />
-      <SidebarInset className="flex flex-col h-screen">
+      <SidebarInset className="flex h-screen flex-col">
         <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
         </header>
 
-        <main className="flex-1 flex flex-col">
+        <main className="flex flex-1 flex-col">
           {/* Chat area */}
           <div className="flex-1 overflow-hidden">
-            <div className="h-full flex flex-col">
-              <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-background">
+            <div className="flex h-full flex-col">
+              <div className="bg-background flex-1 space-y-6 overflow-y-auto p-6">
                 {/* AI message */}
-                <div className="max-w-prose rounded-md bg-muted p-4 text-sm text-muted-foreground">
-                  <div className="font-medium mb-1">Assistant</div>
+                <div className="bg-muted text-muted-foreground max-w-prose rounded-md p-4 text-sm">
+                  <div className="mb-1 font-medium">Assistant</div>
                   <div>Hi — this is a placeholder AI message. It appears on the left.</div>
                 </div>
 
                 {/* User message */}
                 <div className="flex justify-end">
-                  <div className="max-w-[60%] rounded-md bg-primary text-primary-foreground p-4 text-sm">
-                    <div className="font-medium mb-1 text-right">You</div>
-                    <div className="text-right">This is a placeholder user message aligned to the right.</div>
+                  <div className="bg-primary text-primary-foreground max-w-[60%] rounded-md p-4 text-sm">
+                    <div className="mb-1 text-right font-medium">You</div>
+                    <div className="text-right">
+                      This is a placeholder user message aligned to the right.
+                    </div>
                   </div>
                 </div>
 
                 {/* More messages */}
-                <div className="max-w-prose rounded-md bg-muted p-4 text-sm text-muted-foreground">
-                  <div className="font-medium mb-1">Assistant</div>
+                <div className="bg-muted text-muted-foreground max-w-prose rounded-md p-4 text-sm">
+                  <div className="mb-1 font-medium">Assistant</div>
                   <div>Another AI reply to demonstrate scroll behavior and styling.</div>
                 </div>
 
                 <div className="flex justify-end">
-                  <div className="max-w-[60%] rounded-md bg-primary text-primary-foreground p-4 text-sm">
-                    <div className="font-medium mb-1 text-right">You</div>
+                  <div className="bg-primary text-primary-foreground max-w-[60%] rounded-md p-4 text-sm">
+                    <div className="mb-1 text-right font-medium">You</div>
                     <div className="text-right">Another user message sample.</div>
                   </div>
                 </div>
               </div>
 
               {/* Input bar */}
-              <div className="border-t px-4 py-3 bg-background">
-                <div className="max-w-4xl mx-auto flex gap-2">
+              <div className="bg-background border-t px-4 py-3">
+                <div className="mx-auto flex max-w-4xl gap-2">
                   <Textarea className="flex-1 resize-none" placeholder="Type a message..." />
                   <Button>Send</Button>
                 </div>

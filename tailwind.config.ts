@@ -1,7 +1,7 @@
 import { type Config } from "tailwindcss";
 
 const config: Config = {
-	darkMode: "selector",
+  darkMode: "selector",
 };
 
 export default config;

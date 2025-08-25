@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
-import prisma, { nowMs, toBigIntMs } from '@/lib/db';
-import { resetPasswordSchema } from '@/lib/validation/schemas';
-import { hashPassword } from '@/lib/security/hash';
-import { hashToken } from '@/lib/security/token';
-import { revokeAllUserSessions, withNoStore } from '@/lib/auth/session';
+import { NextResponse } from "next/server";
+import prisma, { nowMs, toBigIntMs } from "@/lib/db";
+import { resetPasswordSchema } from "@/lib/validation/schemas";
+import { hashPassword } from "@/lib/security/hash";
+import { hashToken } from "@/lib/security/token";
+import { revokeAllUserSessions, withNoStore } from "@/lib/auth/session";
 
 // POST /api/auth/reset-password
 export async function POST(req: Request) {
@@ -11,8 +11,11 @@ export async function POST(req: Request) {
     const body = await req.json().catch(() => null);
     const parsed = resetPasswordSchema.safeParse(body);
     if (!parsed.success) {
-      const issues = parsed.error.issues.map(i => ({ path: i.path.join('.'), message: i.message }));
-      return withNoStore(NextResponse.json({ error: 'Invalid input', issues }, { status: 400 }));
+      const issues = parsed.error.issues.map((i) => ({
+        path: i.path.join("."),
+        message: i.message,
+      }));
+      return withNoStore(NextResponse.json({ error: "Invalid input", issues }, { status: 400 }));
     }
 
     const { token, newPassword } = parsed.data;
@@ -34,8 +37,8 @@ export async function POST(req: Request) {
 
     if (!rec || rec.usedAt != null || Number(rec.expiresAt) < now || !rec.user?.isActive) {
       // Do not reveal details
-      const res = NextResponse.json({ error: 'Invalid or expired token' }, { status: 400 });
-      res.headers.set('Pragma', 'no-cache');
+      const res = NextResponse.json({ error: "Invalid or expired token" }, { status: 400 });
+      res.headers.set("Pragma", "no-cache");
       return withNoStore(res);
     }
 
@@ -63,9 +66,9 @@ export async function POST(req: Request) {
     await revokeAllUserSessions(rec.userId);
 
     const res = NextResponse.json({ ok: true }, { status: 200 });
-    res.headers.set('Pragma', 'no-cache');
+    res.headers.set("Pragma", "no-cache");
     return withNoStore(res);
   } catch {
-    return withNoStore(NextResponse.json({ error: 'Reset password failed' }, { status: 500 }));
+    return withNoStore(NextResponse.json({ error: "Reset password failed" }, { status: 500 }));
   }
 }

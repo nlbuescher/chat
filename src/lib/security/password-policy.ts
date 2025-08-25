@@ -33,10 +33,7 @@ export function validatePassword(password: string): PasswordPolicyResult {
   const hasSpecial = SPECIAL_RE.test(password);
 
   const classesSatisfied =
-    (hasUpper ? 1 : 0) +
-    (hasLower ? 1 : 0) +
-    (hasDigit ? 1 : 0) +
-    (hasSpecial ? 1 : 0);
+    (hasUpper ? 1 : 0) + (hasLower ? 1 : 0) + (hasDigit ? 1 : 0) + (hasSpecial ? 1 : 0);
 
   const errors: string[] = [];
 
@@ -45,7 +42,7 @@ export function validatePassword(password: string): PasswordPolicyResult {
   }
   if (classesSatisfied < PASSWORD_REQUIRED_CLASSES) {
     errors.push(
-      `Password must include at least ${PASSWORD_REQUIRED_CLASSES} of: uppercase, lowercase, digit, special.`
+      `Password must include at least ${PASSWORD_REQUIRED_CLASSES} of: uppercase, lowercase, digit, special.`,
     );
   }
 

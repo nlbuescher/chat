@@ -1,6 +1,6 @@
 // src/lib/auth/lockout.ts
-import prisma, { nowMs, toBigIntMs, fromBigIntMs } from '@/lib/db';
-import { authConfig } from '@/lib/config/security';
+import prisma, { nowMs, toBigIntMs, fromBigIntMs } from "@/lib/db";
+import { authConfig } from "@/lib/config/security";
 
 type LockoutSettings = {
   threshold: number;
@@ -31,7 +31,11 @@ export function isLocked(lockedUntil: bigint | null | undefined): LockoutStatus 
   return { locked: false, remainingMs: 0 };
 }
 
-export async function recordFailedLogin(user: { id: number; failedLoginCount: number; lockedUntil: bigint | null | undefined; }): Promise<LockoutStatus> {
+export async function recordFailedLogin(user: {
+  id: number;
+  failedLoginCount: number;
+  lockedUntil: bigint | null | undefined;
+}): Promise<LockoutStatus> {
   const status = isLocked(user.lockedUntil);
   if (status.locked) {
     // Keep lock; don't modify counters while locked

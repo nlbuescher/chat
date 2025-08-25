@@ -11,10 +11,9 @@ const compat = new FlatCompat({
 });
 
 const eslintConfig: Linter.Config[] = [
-  {
-    ignores: ["src/generated/**"],
-  },
+  { ignores: ["src/generated/**"] },
   ...compat.extends("next/core-web-vitals", "next/typescript"),
+  { ignores: ["*.d.ts"], rules: {} },
 ];
 
 export default eslintConfig;

@@ -60,6 +60,16 @@ model PasswordResetToken {
   @@map("password_reset_tokens")
 }
 
+model PasswordResetRequest {
+  id        Int     @id @default(autoincrement())
+  ip        String?
+  createdAt BigInt  @map("created_at") // epoch ms
+
+  @@index([ip, createdAt])
+  @@index([createdAt])
+  @@map("password_reset_requests")
+}
+
 model LoginAttempt {
   id          Int       @id @default(autoincrement())
   ip          String?

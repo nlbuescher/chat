@@ -1,8 +1,8 @@
-import { NextResponse } from 'next/server';
-import prisma, { nowMs, toBigIntMs } from '@/lib/db';
-import { hashPassword } from '@/lib/security/hash';
-import { registerSchema } from '@/lib/validation/schemas';
-import { withNoStore } from '@/lib/auth/session';
+import { NextResponse } from "next/server";
+import prisma, { nowMs, toBigIntMs } from "@/lib/db";
+import { hashPassword } from "@/lib/security/hash";
+import { registerSchema } from "@/lib/validation/schemas";
+import { withNoStore } from "@/lib/auth/session";
 
 // POST /api/auth/register
 export async function POST(req: Request) {
@@ -11,8 +11,11 @@ export async function POST(req: Request) {
 
     const parsed = registerSchema.safeParse(body);
     if (!parsed.success) {
-      const issues = parsed.error.issues.map(i => ({ path: i.path.join('.'), message: i.message }));
-      return withNoStore(NextResponse.json({ error: 'Invalid input', issues }, { status: 400 }));
+      const issues = parsed.error.issues.map((i) => ({
+        path: i.path.join("."),
+        message: i.message,
+      }));
+      return withNoStore(NextResponse.json({ error: "Invalid input", issues }, { status: 400 }));
     }
 
     const { username, email, password } = parsed.data;
@@ -24,10 +27,10 @@ export async function POST(req: Request) {
     ]);
 
     if (byUsername) {
-      return withNoStore(NextResponse.json({ error: 'Username already taken' }, { status: 409 }));
+      return withNoStore(NextResponse.json({ error: "Username already taken" }, { status: 409 }));
     }
     if (email && byEmail) {
-      return withNoStore(NextResponse.json({ error: 'Email already registered' }, { status: 409 }));
+      return withNoStore(NextResponse.json({ error: "Email already registered" }, { status: 409 }));
     }
 
     // Hash password
@@ -52,7 +55,6 @@ export async function POST(req: Request) {
     return withNoStore(NextResponse.json({ ok: true }, { status: 201 }));
   } catch {
     // Avoid leaking details
-    return withNoStore(NextResponse.json({ error: 'Registration failed' }, { status: 500 }));
+    return withNoStore(NextResponse.json({ error: "Registration failed" }, { status: 500 }));
   }
 }
-
