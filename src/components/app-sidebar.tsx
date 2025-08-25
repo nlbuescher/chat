@@ -38,20 +38,24 @@ export function AppSidebar({ navMain, className, ...props }: AppSidebarProps) {
 				</SidebarHeader>
 
 				{navMain.map((item) => {
-					return <SidebarGroup key={item.title}>
-						<SidebarGroupLabel>{item.title}</SidebarGroupLabel>
-						<SidebarGroupContent>
-							<SidebarMenu>
-								{item.items.map((subItem) => {
-									return <SidebarMenuItem key={subItem.title}>
-										<SidebarMenuButton asChild isActive={subItem.isActive}>
-											<a href={subItem.url}>{subItem.title}</a>
-										</SidebarMenuButton>
-									</SidebarMenuItem>
-								})}
-							</SidebarMenu>
-						</SidebarGroupContent>
-					</SidebarGroup>
+					return (
+						<SidebarGroup key={item.title}>
+							<SidebarGroupLabel>{item.title}</SidebarGroupLabel>
+							<SidebarGroupContent>
+								<SidebarMenu>
+									{item.items.map((subItem) => {
+										return (
+											<SidebarMenuItem key={subItem.title}>
+												<SidebarMenuButton asChild isActive={subItem.isActive}>
+													<a href={subItem.url}>{subItem.title}</a>
+												</SidebarMenuButton>
+											</SidebarMenuItem>
+										);
+									})}
+								</SidebarMenu>
+							</SidebarGroupContent>
+						</SidebarGroup>
+					);
 				})}
 
 				<div className="flex items-center mt-auto gap-2 p-2">

@@ -1,5 +1,5 @@
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
-import { AppSidebar, AppSidebarProps } from "@/components/app-sidebar";
+import { AppSidebar, type AppSidebarProps } from "@/components/app-sidebar";
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 
