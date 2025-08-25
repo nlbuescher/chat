@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import prisma, { nowMs, toBigIntMs } from '@/lib/db';
 import { hashPassword } from '@/lib/security/hash';
 import { registerSchema } from '@/lib/validation/schemas';
+import { withNoStore } from '@/lib/auth/session';
 
 // POST /api/auth/register
 export async function POST(req: Request) {
@@ -55,10 +56,3 @@ export async function POST(req: Request) {
   }
 }
 
-// Minimal helper here to avoid importing from session module due to cookie API differences.
-// Ensures responses are not cached by intermediaries or the browser.
-function withNoStore(res: NextResponse) {
-  res.headers.set('Cache-Control', 'no-store, max-age=0');
-  res.headers.set('Pragma', 'no-cache');
-  return res;
-}

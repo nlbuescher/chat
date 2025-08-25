@@ -1,9 +1,9 @@
 // src/lib/auth/rate-limit.ts
 import prisma, { nowMs, toBigIntMs } from '@/lib/db';
 
-export const LOGIN_WINDOW_MS = +(process.env.RATE_LIMIT_LOGIN_WINDOW_MS ?? 60_000); // 1 minute
-export const LOGIN_MAX_PER_IP = +(process.env.RATE_LIMIT_LOGIN_MAX_PER_IP ?? 10);
-export const LOGIN_MAX_PER_USERNAME = +(process.env.RATE_LIMIT_LOGIN_MAX_PER_USERNAME ?? 10);
+export const LOGIN_WINDOW_MS = +(process.env['RATE_LIMIT_LOGIN_WINDOW_MS'] ?? 60_000); // 1 minute
+export const LOGIN_MAX_PER_IP = +(process.env['RATE_LIMIT_LOGIN_MAX_PER_IP'] ?? 10);
+export const LOGIN_MAX_PER_USERNAME = +(process.env['RATE_LIMIT_LOGIN_MAX_PER_USERNAME'] ?? 10);
 
 export type RateLimitCheck = {
   allowed: boolean;

@@ -5,23 +5,31 @@ import { NextRequest, NextResponse } from 'next/server';
 import { nanoid } from 'nanoid';
 import prisma, { nowMs, toBigIntMs, fromBigIntMs } from '@/lib/db';
 
-const COOKIE_NAME = process.env.SESSION_COOKIE_NAME ?? 'sid';
-const SESSION_MAX_AGE_MS = +(process.env.SESSION_MAX_AGE_MS ?? 7 * 24 * 60 * 60 * 1000); // 7d
-const SESSION_IDLE_TIMEOUT_MS = +(process.env.SESSION_IDLE_TIMEOUT_MS ?? 30 * 60 * 1000); // 30m
+const COOKIE_NAME = process.env['SESSION_COOKIE_NAME'] ?? '__Host-sid';
+const SESSION_MAX_AGE_MS = +(process.env['SESSION_MAX_AGE_MS'] ?? 7 * 24 * 60 * 60 * 1000); // 7d
+const SESSION_IDLE_TIMEOUT_MS = +(process.env['SESSION_IDLE_TIMEOUT_MS'] ?? 30 * 60 * 1000); // 30m
 
 type ClientInfo = {
   ip: string | null;
   userAgent: string | null;
 };
 
-function getClientInfo(req: Request | NextRequest): ClientInfo {
-  // Prefer standard proxy headers, fallback to NextRequest.ip if available
+export function getClientInfo(req: Request | NextRequest): ClientInfo {
+  // Prefer platform-provided IP, then CDN/proxy headers, then XFF chain
   const headers = req.headers;
-  const xff = headers.get('x-forwarded-for');
-  const ip =
-    (xff?.split(',')[0]?.trim() ||
+
+  let ip: string | null = null;
+  const anyReq = req as { ip?: string | null };
+  if (typeof anyReq?.ip === 'string' && anyReq.ip) {
+    ip = anyReq.ip;
+  } else {
+    ip =
+      headers.get('x-vercel-ip') ||
+      headers.get('cf-connecting-ip') ||
+      headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
       headers.get('x-real-ip') ||
-      null);
+      null;
+  }
 
   const userAgent = headers.get('user-agent');
   return { ip, userAgent };
@@ -62,7 +70,7 @@ export async function getSession(sessionId: string) {
 }
 
 export function setSessionCookie(id: string, res: NextResponse) {
-  const secure = process.env.NODE_ENV === 'production';
+  const secure = true; // __Host- cookies must be Secure
   // Max-Age equals absolute lifetime; idle timeout enforced server-side
   res.cookies.set(COOKIE_NAME, id, {
     httpOnly: true,
@@ -70,13 +78,14 @@ export function setSessionCookie(id: string, res: NextResponse) {
     sameSite: 'lax',
     path: '/',
     maxAge: Math.floor(SESSION_MAX_AGE_MS / 1000),
+    priority: 'high',
   });
 }
 
 export function clearSessionCookie(res: NextResponse) {
   res.cookies.set(COOKIE_NAME, '', {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: true,
     sameSite: 'lax',
     path: '/',
     expires: new Date(0),
@@ -100,13 +109,13 @@ export async function validateAndTouchSession() {
   const lastUsedAt = fromBigIntMs(s.lastUsedAt);
   if (expiresAt !== null && now > expiresAt) {
     // Expired absolutely
-    await prisma.session.delete({ where: { id } }).catch(() => {});
+    await prisma.session.delete({ where: { id } }).catch(() => { });
     return { valid: false as const, reason: 'expired' as const };
   }
 
   // Idle timeout check
   if (lastUsedAt !== null && now - lastUsedAt > SESSION_IDLE_TIMEOUT_MS) {
-    await prisma.session.delete({ where: { id } }).catch(() => {});
+    await prisma.session.delete({ where: { id } }).catch(() => { });
     return { valid: false as const, reason: 'idle_timeout' as const };
   }
 
@@ -128,7 +137,7 @@ export async function validateAndTouchSession() {
 }
 
 export async function revokeSession(id: string) {
-  await prisma.session.delete({ where: { id } }).catch(() => {});
+  await prisma.session.delete({ where: { id } }).catch(() => { });
 }
 
 export async function revokeAllUserSessions(userId: number, exceptId?: string) {
@@ -141,5 +150,6 @@ export async function revokeAllUserSessions(userId: number, exceptId?: string) {
 
 export function withNoStore(resp: NextResponse) {
   resp.headers.set('Cache-Control', 'no-store, max-age=0');
+  resp.headers.set('Pragma', 'no-cache');
   return resp;
 }

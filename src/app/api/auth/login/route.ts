@@ -2,16 +2,10 @@ import { NextResponse } from 'next/server';
 import prisma, { nowMs, toBigIntMs } from '@/lib/db';
 import { loginSchema } from '@/lib/validation/schemas';
 import { verifyPassword, hashPassword } from '@/lib/security/hash';
-import { checkLoginRateLimit, recordLoginAttempt } from '@/lib/auth/rate-limit';
+import { checkLoginRateLimit, recordLoginAttempt, LOGIN_WINDOW_MS } from '@/lib/auth/rate-limit';
 import { isLocked, recordFailedLogin, recordSuccessfulLogin } from '@/lib/auth/lockout';
-import { createSession, setSessionCookie, withNoStore } from '@/lib/auth/session';
+import { createSession, setSessionCookie, withNoStore, getClientInfo } from '@/lib/auth/session';
 
-function getIp(req: Request): string | null {
-  const xff = req.headers.get('x-forwarded-for');
-  const primary = xff?.split(',')[0]?.trim();
-  const ip = primary || req.headers.get('x-real-ip');
-  return ip ?? null;
-}
 
 // POST /api/auth/login
 export async function POST(req: Request) {
@@ -24,13 +18,15 @@ export async function POST(req: Request) {
     }
 
     const { username, password } = parsed.data;
-    const ip = getIp(req);
+    const { ip } = getClientInfo(req);
     const usernameKey = username;
 
     const rl = await checkLoginRateLimit(ip, usernameKey);
     if (!rl.allowed) {
       await recordLoginAttempt({ ip, usernameKey, success: false });
-      return withNoStore(NextResponse.json({ error: 'Too many attempts, try again later' }, { status: 429 }));
+      const res = NextResponse.json({ error: 'Too many attempts, try again later' }, { status: 429 });
+      res.headers.set('Retry-After', String(Math.ceil(LOGIN_WINDOW_MS / 1000)));
+      return withNoStore(res);
     }
 
     const user = await prisma.user.findUnique({ where: { username } });
@@ -41,13 +37,15 @@ export async function POST(req: Request) {
 
     if (!user.isActive) {
       await recordLoginAttempt({ ip, usernameKey, success: false });
-      return withNoStore(NextResponse.json({ error: 'Account is disabled' }, { status: 403 }));
+      const res = NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+      return withNoStore(res);
     }
 
     const lock = isLocked(user.lockedUntil);
     if (lock.locked) {
       await recordLoginAttempt({ ip, usernameKey, success: false });
-      const res = NextResponse.json({ error: 'Account locked. Try again later', retryAfterMs: lock.remainingMs }, { status: 423 });
+      const res = NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+      res.headers.set('Retry-After', String(Math.ceil(lock.remainingMs / 1000)));
       return withNoStore(res);
     }
 
@@ -56,10 +54,12 @@ export async function POST(req: Request) {
       await recordLoginAttempt({ ip, usernameKey, success: false });
       const fail = await recordFailedLogin({ id: user.id, failedLoginCount: user.failedLoginCount, lockedUntil: user.lockedUntil });
       if (fail.locked) {
-        const res = NextResponse.json({ error: 'Account locked. Try again later', retryAfterMs: fail.remainingMs }, { status: 423 });
+        const res = NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+        res.headers.set('Retry-After', String(Math.ceil(fail.remainingMs / 1000)));
         return withNoStore(res);
       }
-      return withNoStore(NextResponse.json({ error: 'Invalid credentials' }, { status: 401 }));
+      const res = NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+      return withNoStore(res);
     }
 
     if (needsRehash) {

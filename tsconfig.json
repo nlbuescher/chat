@@ -22,7 +22,6 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "noUncheckedIndexedAccess": true,
-    "noUncheckedSideEffectImports": true,
     "jsx": "preserve",
     "incremental": true,
     "plugins": [
